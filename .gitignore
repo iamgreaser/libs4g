@@ -1,0 +1,12 @@
+# Output
+bin/
+
+# C
+*.o
+
+# Editors
+*~
+
+# VIM
+.*.sw?
+.sw?
