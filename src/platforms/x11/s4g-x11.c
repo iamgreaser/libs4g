@@ -438,4 +438,3 @@ bool s4g_snap_from_window(s4g_window_t *W, void **data_return, int *width_return
 	fail:
 	return false;
 }
-
