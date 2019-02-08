@@ -298,32 +298,32 @@ void s4g_close_window(s4g_window_t *W)
 	free(W);
 }
 
-static char *s4g_get_x11_window_class(s4g_display_t *S, Window w)
+static char *s4g_get_x11_window_string_property(s4g_display_t *S, Window w, const char *name, const char *type)
 {
-	Atom string_atom = XInternAtom(S->dpy, "STRING", False);
-	Atom wm_class_property_atom = XInternAtom(S->dpy, "WM_CLASS", False);
-	Atom wm_class_type = 0;
-	int wm_class_format = 0;
-	long wm_class_nitems = 0;
-	long wm_class_bytes = 0;
-	unsigned char *wm_class = NULL;
-	int got_wm_class = XGetWindowProperty(
+	Atom string_atom = XInternAtom(S->dpy, type, False);
+	Atom wm_prop_property_atom = XInternAtom(S->dpy, name, False);
+	Atom wm_prop_type = 0;
+	int wm_prop_format = 0;
+	long wm_prop_nitems = 0;
+	long wm_prop_bytes = 0;
+	unsigned char *wm_prop = NULL;
+	int got_wm_prop = XGetWindowProperty(
 		S->dpy,
 		w,
-		wm_class_property_atom,
+		wm_prop_property_atom,
 		0, 1024, False,
 		string_atom,
-		&wm_class_type,
-		&wm_class_format,
-		&wm_class_nitems,
-		&wm_class_bytes,
-		&wm_class);
+		&wm_prop_type,
+		&wm_prop_format,
+		&wm_prop_nitems,
+		&wm_prop_bytes,
+		&wm_prop);
 
-	if(wm_class_format == 0) {
-		XFree(wm_class);
+	if(wm_prop_format == 0) {
+		XFree(wm_prop);
 		return NULL;
 	} else {
-		return wm_class;
+		return wm_prop;
 	}
 }
 
@@ -333,7 +333,7 @@ static s4g_window_t *s4g_open_window_from_x11(s4g_display_t *S, Window w, bool p
 	{
 		// Get window class
 
-		char *wm_class = s4g_get_x11_window_class(S, w);
+		char *wm_class = s4g_get_x11_window_string_property(S, w, "WM_CLASS", "STRING");
 
 		if(wm_class == NULL) {
 			Window root, child;
@@ -428,7 +428,7 @@ s4g_window_t *s4g_open_window_at_cursor(s4g_display_t *S)
 	return NULL;
 }
 
-static s4g_window_t *s4g_find_first_window_with_given_class_name(s4g_display_t *S, Window w, const char *name)
+static s4g_window_t *s4g_find_first_window_with_given_property(s4g_display_t *S, Window w, const char *prop, const char *type, const char *name)
 {
 	Window root, parent;
 	Window *children = NULL;
@@ -444,10 +444,10 @@ static s4g_window_t *s4g_find_first_window_with_given_class_name(s4g_display_t *
 	}
 	for(int i = 0; i < nchildren; i++) {
 		Window child = children[i];
-		char *w_name = s4g_get_x11_window_class(S, child);
+		char *w_name = s4g_get_x11_window_string_property(S, child, prop, type);
 		if(w_name != NULL) {
 #if DEBUG_S4G
-			printf("WM_CLASS: 0x%x %d - \"%s\"\n", child, i, w_name);
+			printf("%s: 0x%x %d - \"%s\"\n", type, child, i, w_name);
 #endif
 
 			if(!strcmp(w_name, name)) {
@@ -461,7 +461,7 @@ static s4g_window_t *s4g_find_first_window_with_given_class_name(s4g_display_t *
 			}
 		}
 
-		s4g_window_t *W = s4g_find_first_window_with_given_class_name(S, child, name);
+		s4g_window_t *W = s4g_find_first_window_with_given_property(S, child, prop, type, name);
 		if(W != NULL) {
 			// Matched
 			XFree(children);
@@ -478,7 +478,12 @@ static s4g_window_t *s4g_find_first_window_with_given_class_name(s4g_display_t *
 
 s4g_window_t *s4g_open_window_with_class_name(s4g_display_t *S, const char *name)
 {
-	return s4g_find_first_window_with_given_class_name(S, XDefaultRootWindow(S->dpy), name);
+	return s4g_find_first_window_with_given_property(S, XDefaultRootWindow(S->dpy), "WM_CLASS", "STRING", name);
+}
+
+s4g_window_t *s4g_open_window_with_title(s4g_display_t *S, const char *name)
+{
+	return s4g_find_first_window_with_given_property(S, XDefaultRootWindow(S->dpy), "WM_NAME", "STRING", name);
 }
 
 void *s4g_get_pointer_to_raw_display(s4g_display_t *S)
