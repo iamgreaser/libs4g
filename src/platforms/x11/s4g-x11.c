@@ -384,6 +384,11 @@ static s4g_window_t *s4g_open_window_from_x11(s4g_display_t *S, Window w)
 
 }
 
+s4g_window_t *s4g_open_root_window(s4g_display_t *S)
+{
+	return s4g_open_window_from_x11(S, XDefaultRootWindow(S->dpy));
+}
+
 s4g_window_t *s4g_open_window_at_cursor(s4g_display_t *S)
 {
 	Window root;

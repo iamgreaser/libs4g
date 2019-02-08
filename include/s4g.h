@@ -6,6 +6,7 @@ typedef struct s4g_window s4g_window_t;
 s4g_display_t *s4g_open(const char *display_string);
 void s4g_close(s4g_display_t *S);
 
+s4g_window_t *s4g_open_root_window(s4g_display_t *S);
 s4g_window_t *s4g_open_window_at_cursor(s4g_display_t *S);
 void s4g_close_window(s4g_window_t *W);
 
