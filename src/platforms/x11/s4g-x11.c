@@ -481,6 +481,16 @@ s4g_window_t *s4g_open_window_with_class_name(s4g_display_t *S, const char *name
 	return s4g_find_first_window_with_given_class_name(S, XDefaultRootWindow(S->dpy), name);
 }
 
+void *s4g_get_pointer_to_raw_display(s4g_display_t *S)
+{
+	return &S->dpy;
+}
+
+void *s4g_get_pointer_to_raw_window(s4g_window_t *W)
+{
+	return &W->w;
+}
+
 bool s4g_snap_from_window(s4g_window_t *W, void **data_return, int *width_return, int *height_return, int *bytes_per_line_return)
 {
 	s4g_display_t *S = W->S;
