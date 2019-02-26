@@ -8,9 +8,15 @@ Supported platforms:
 
 - X11 (tested on Linux, theoretically works on various BSDs but nobody's tried yet)
 
+Not quite supported platforms:
+
+- Windows (tested on Linux via 32-bit Wine, currently only supports full screen capture)
+
 Building is pretty bare, take a look at the build.sh script and modify it to your liking.
 
-No, this does not work on Windows yet, but if you want to write a version which does work for Windows it's probably best to have that merged in. Take note that this is an extremely platform-specific library under the hood, so it will probably not share code with the X11 version.
+Or for Windows look at winbuild.sh.
+
+If you want to write a version which works for a non-X11, non-Windows OS it's probably best to have that merged in. Take note that this is an extremely platform-specific library under the hood, so it will probably not share code with the X11 version or the Windows version, and after all those versions don't share code with each other.
 
 This probably doesn't work on macOS.
 
