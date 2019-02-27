@@ -280,7 +280,7 @@ bool s4g_snap_from_window(s4g_window_t *W, void **data_return, int *width_return
 		W->raw_hdc,
 		W->bitmap,
 		0,
-		W->height * bmp_pitch,
+		W->height,
 		W->pixels,
 		(BITMAPINFO *)&bi,
 		DIB_RGB_COLORS);
