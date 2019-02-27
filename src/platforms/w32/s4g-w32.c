@@ -31,7 +31,13 @@ struct s4g_window {
 	uint8_t *pixels;
 };
 
-struct window_enum_state {
+struct cursor_window_enum_state {
+	s4g_display_t *S;
+	s4g_window_t *W;
+	POINT cursor_pos;
+};
+
+struct title_window_enum_state {
 	s4g_display_t *S;
 	s4g_window_t *W;
 	const char *reference_name;
@@ -118,7 +124,7 @@ static s4g_window_t *open_window_from_hwnd(s4g_display_t *S, HWND hwnd)
 		W->height = W->window_rect.bottom - W->window_rect.top;
 	}
 
-	printf("size: %d x %d\n", W->width, W->height);
+	//printf("size: %d x %d\n", W->width, W->height);
 
 	W->bitmap = CreateCompatibleBitmap(W->raw_hdc, W->width, W->height);
 	assert(W->bitmap);
@@ -139,13 +145,50 @@ s4g_window_t *s4g_open_root_window(s4g_display_t *S)
 	return open_window_from_hwnd(S, NULL);
 }
 
+static BOOL CALLBACK find_window_at_cursor(HWND hwnd, LPARAM lparam)
+{
+	struct cursor_window_enum_state *wes = (struct cursor_window_enum_state *)(void *)lparam;
+
+	RECT rect;
+	BOOL did_get_rect = GetWindowRect(hwnd, &rect);
+	assert(did_get_rect);
+	// At this point, Windows got rect
+
+	//printf("wnd %08X: %d < %d < %d | %d < %d < %d\n", hwnd, rect.left, wes->cursor_pos.x, rect.right, rect.top, wes->cursor_pos.x, rect.bottom);
+
+	if(rect.left <= wes->cursor_pos.x
+		&& wes->cursor_pos.x < rect.right
+		&& rect.top <= wes->cursor_pos.y
+		&& wes->cursor_pos.y < rect.bottom)
+	{
+		wes->W = open_window_from_hwnd(wes->S, hwnd);
+
+		return FALSE;
+
+	} else {
+		BOOL no_windows_found = EnumChildWindows(
+			NULL,
+			find_window_at_cursor,
+			(LPARAM)(void *)wes);
+
+		return no_windows_found;
+	}
+}
+
 s4g_window_t *s4g_open_window_at_cursor(s4g_display_t *S)
 {
-	assert(!"TODO");
-	return NULL;
+	struct cursor_window_enum_state base_wes;
+	struct cursor_window_enum_state *wes = &base_wes;
+	memset(wes, 0, sizeof(*wes));
+	wes->S = S;
+	BOOL did_get_cursor_pos = GetCursorPos(&wes->cursor_pos);
+	assert(did_get_cursor_pos != 0);
 
-	fail:
-	return NULL;
+	BOOL no_windows_found = EnumWindows(find_window_at_cursor, (LPARAM)(void *)wes);
+	assert(no_windows_found == FALSE);
+
+	assert(wes->W != NULL);
+	return wes->W;
 }
 
 s4g_window_t *s4g_open_window_with_class_name(s4g_display_t *S, const char *name)
@@ -156,11 +199,11 @@ s4g_window_t *s4g_open_window_with_class_name(s4g_display_t *S, const char *name
 
 static BOOL CALLBACK find_window_by_title(HWND hwnd, LPARAM lparam)
 {
-	struct window_enum_state *wes = (struct window_enum_state *)(void *)lparam;
+	struct title_window_enum_state *wes = (struct title_window_enum_state *)(void *)lparam;
 
 	int did_get_text = GetWindowText(hwnd, wes->result_name, sizeof(wes->result_name)-1);
 
-	printf("wnd %08X = \"%s\"\n", hwnd, wes->result_name);
+	//printf("wnd %08X = \"%s\"\n", hwnd, wes->result_name);
 
 	if(!strcmp(wes->result_name, wes->reference_name))
 	{
@@ -180,8 +223,8 @@ static BOOL CALLBACK find_window_by_title(HWND hwnd, LPARAM lparam)
 
 s4g_window_t *s4g_open_window_with_title(s4g_display_t *S, const char *name)
 {
-	struct window_enum_state base_wes;
-	struct window_enum_state *wes = &base_wes;
+	struct title_window_enum_state base_wes;
+	struct title_window_enum_state *wes = &base_wes;
 	memset(wes, 0, sizeof(*wes));
 	wes->S = S;
 	wes->reference_name = name;
