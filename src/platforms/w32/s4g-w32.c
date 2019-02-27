@@ -31,6 +31,13 @@ struct s4g_window {
 	uint8_t *pixels;
 };
 
+struct window_enum_state {
+	s4g_display_t *S;
+	s4g_window_t *W;
+	const char *reference_name;
+	char result_name[1024];
+};
+
 void s4g_close(s4g_display_t *S)
 {
 	if(S == NULL) {
@@ -83,7 +90,7 @@ void s4g_close_window(s4g_window_t *W)
 	}
 }
 
-static s4g_window_t *s4g_open_window_from_hwnd(s4g_display_t *S, HWND hwnd)
+static s4g_window_t *open_window_from_hwnd(s4g_display_t *S, HWND hwnd)
 {
 	s4g_window_t *W = malloc(sizeof(s4g_window_t));
 	if(W == NULL) {
@@ -128,8 +135,8 @@ static s4g_window_t *s4g_open_window_from_hwnd(s4g_display_t *S, HWND hwnd)
 
 s4g_window_t *s4g_open_root_window(s4g_display_t *S)
 {
-	//return s4g_open_window_from_hwnd(S, GetDesktopWindow());
-	return s4g_open_window_from_hwnd(S, NULL);
+	//return open_window_from_hwnd(S, GetDesktopWindow());
+	return open_window_from_hwnd(S, NULL);
 }
 
 s4g_window_t *s4g_open_window_at_cursor(s4g_display_t *S)
@@ -147,10 +154,43 @@ s4g_window_t *s4g_open_window_with_class_name(s4g_display_t *S, const char *name
 	return NULL;
 }
 
+static BOOL CALLBACK find_window_by_title(HWND hwnd, LPARAM lparam)
+{
+	struct window_enum_state *wes = (struct window_enum_state *)(void *)lparam;
+
+	int did_get_text = GetWindowText(hwnd, wes->result_name, sizeof(wes->result_name)-1);
+
+	printf("wnd %08X = \"%s\"\n", hwnd, wes->result_name);
+
+	if(!strcmp(wes->result_name, wes->reference_name))
+	{
+		wes->W = open_window_from_hwnd(wes->S, hwnd);
+
+		return FALSE;
+
+	} else {
+		BOOL no_windows_found = EnumChildWindows(
+			NULL,
+			find_window_by_title,
+			(LPARAM)(void *)wes);
+
+		return no_windows_found;
+	}
+}
+
 s4g_window_t *s4g_open_window_with_title(s4g_display_t *S, const char *name)
 {
-	assert(!"TODO");
-	return NULL;
+	struct window_enum_state base_wes;
+	struct window_enum_state *wes = &base_wes;
+	memset(wes, 0, sizeof(*wes));
+	wes->S = S;
+	wes->reference_name = name;
+
+	BOOL no_windows_found = EnumWindows(find_window_by_title, (LPARAM)(void *)wes);
+	assert(no_windows_found == FALSE);
+
+	assert(wes->W != NULL);
+	return wes->W;
 }
 
 void *s4g_get_pointer_to_raw_display(s4g_display_t *S)

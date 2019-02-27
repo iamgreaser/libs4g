@@ -21,6 +21,7 @@ int main(int argc, char *argv[])
 	}
 
 	//W = s4g_open_window_at_cursor(S);
+	//W = s4g_open_window_with_title(S, "Untitled - Notepad");
 	W = s4g_open_root_window(S);
 	if(W == NULL) {
 		goto fail;
